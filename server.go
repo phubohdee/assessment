@@ -41,6 +41,26 @@ func CreateExpenses(c echo.Context) error {
 	return c.JSON(http.StatusCreated, e)
 }
 
+func GetExpensesByID(c echo.Context) error {
+	id := c.Param("id")
+	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query user statment:" + err.Error()})
+	}
+
+	row := stmt.QueryRow(id)
+	e := Expenses{}
+	err = row.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, &e.Tags)
+	switch err {
+	case sql.ErrNoRows:
+		return c.JSON(http.StatusNotFound, Err{Message: "user not found"})
+	case nil:
+		return c.JSON(http.StatusOK, e)
+	default:
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan user:" + err.Error()})
+	}
+}
+
 var db *sql.DB
 
 func main() {
@@ -74,7 +94,9 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.POST("/expenses", CreateExpenses)
+	g := e.Group("expenses")
+	g.POST("", CreateExpenses)
+	g.POST("/:id", GetExpensesByID)
 
 	// fmt.Println("Please use server.go for main file")
 	// fmt.Println("start at port:", os.Getenv("PORT"))

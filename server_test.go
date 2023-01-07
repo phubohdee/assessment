@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -22,7 +23,6 @@ func TestCreateExpenses(t *testing.T) {
 
 		var e Expenses
 
-		// res := Request(t, http.MethodPost, Uri(fmt.Sprint(settings.Port), "expenses"), strings.NewReader(body))
 		res := request(http.MethodPost, uri("expenses"), body)
 		err := res.Decode(&e)
 
@@ -36,6 +36,39 @@ func TestCreateExpenses(t *testing.T) {
 		}
 
 	})
+}
+
+func TestGetExpensesByID(t *testing.T) {
+	t.Run("Should get expense by id successfully", func(t *testing.T) {
+		c := seedUser(t)
+
+		var latest Expenses
+		res := request(http.MethodGet, uri("users", strconv.Itoa(c.ID)), nil)
+		err := res.Decode(&latest)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, res.StatusCode)
+		assert.NotEqual(t, c.ID, latest.ID)
+		assert.NotEmpty(t, latest.Title)
+		assert.NotEmpty(t, latest.Amount)
+		assert.NotEmpty(t, latest.Note)
+		assert.NotEmpty(t, latest.Tags)
+	})
+}
+
+func seedUser(t *testing.T) Expenses {
+	var e Expenses
+	body := bytes.NewBufferString(`{
+		"name": "Phubohdee",
+		"age": 22
+	}`)
+
+	err := request(http.MethodPost, uri("expenses"), body).Decode(&e)
+	if err != nil {
+		t.Fatal("can't create uomer", err)
+	}
+
+	return e
 }
 
 func uri(paths ...string) string {

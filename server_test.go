@@ -12,7 +12,7 @@ import (
 )
 
 func TestCreateExpenses(t *testing.T) {
-	t.Run("Should create new expense successfully", func(t *testing.T) {
+	t.Run("Should create new expenses successfully", func(t *testing.T) {
 		body := bytes.NewBufferString(`{
 			"title": "strawberry smoothie",
 			"amount": 79,
@@ -59,7 +59,7 @@ func TestGetExpensesByID(t *testing.T) {
 }
 
 func TestUpdateExpensesByID(t *testing.T) {
-	t.Run("Should update expense by id successfully", func(t *testing.T) {
+	t.Run("Should update expenses by id successfully", func(t *testing.T) {
 		body := bytes.NewBufferString(`{
 			"title": "apple smoothie",
 			"amount": 89,
@@ -68,7 +68,7 @@ func TestUpdateExpensesByID(t *testing.T) {
 		}`)
 
 		var e Expenses
-		res := request(http.MethodGet, uri("expenses", "1"), body)
+		res := request(http.MethodPut, uri("expenses", "1"), body)
 		err := res.Decode(&e)
 
 		if assert.NoError(t, err) {
@@ -81,6 +81,21 @@ func TestUpdateExpensesByID(t *testing.T) {
 		}
 	})
 }
+
+func TestGetExpenses(t *testing.T) {
+	t.Run("Should get expenses successfully", func(t *testing.T) {
+		body := bytes.NewBufferString(`{}`)
+
+		var e []Expenses
+		res := request(http.MethodPut, uri("expenses"), body)
+		err := res.Decode(&e)
+
+		assert.Nil(t, err)
+		assert.EqualValues(t, http.StatusOK, res.StatusCode)
+		assert.Greater(t, len(e), 0)
+	})
+}
+
 func uri(paths ...string) string {
 	host := "http://localhost:2565"
 	if paths == nil {

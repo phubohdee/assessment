@@ -61,6 +61,22 @@ func GetExpensesByID(c echo.Context) error {
 	}
 }
 
+func UpdateExpensesByID(c echo.Context) error {
+	var e Expenses
+	err := c.Bind(&e)
+
+	id := c.Param("id")
+	stmt, err := db.Prepare("UPDATE expenses SET title = $1, amount = $2, note = $3, tags = $4 WHERE id = $5 RETURNING id")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query user statment:" + err.Error()})
+	}
+
+	row := stmt.QueryRow(e.Title, e.Amount, e.Note, pq.Array(&e.Tags), id)
+	err = row.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, &e.Tags)
+
+	return c.JSON(http.StatusCreated, nil)
+}
+
 var db *sql.DB
 
 func main() {
@@ -97,6 +113,7 @@ func main() {
 	g := e.Group("expenses")
 	g.POST("", CreateExpenses)
 	g.POST("/:id", GetExpensesByID)
+	g.PUT("/:id", UpdateExpensesByID)
 
 	// fmt.Println("Please use server.go for main file")
 	// fmt.Println("start at port:", os.Getenv("PORT"))

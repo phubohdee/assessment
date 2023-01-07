@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -39,38 +38,49 @@ func TestCreateExpenses(t *testing.T) {
 }
 
 func TestGetExpensesByID(t *testing.T) {
-	t.Run("Should get expense by id successfully", func(t *testing.T) {
-		c := seedUser(t)
+	t.Run("Should get expenses by id successfully", func(t *testing.T) {
+		body := bytes.NewBufferString(`{
+			"id": 1
+		}`)
 
-		var latest Expenses
-		res := request(http.MethodGet, uri("users", strconv.Itoa(c.ID)), nil)
-		err := res.Decode(&latest)
+		var e Expenses
+		res := request(http.MethodGet, uri("expenses", "1"), body)
+		err := res.Decode(&e)
 
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, res.StatusCode)
-		assert.NotEqual(t, c.ID, latest.ID)
-		assert.NotEmpty(t, latest.Title)
-		assert.NotEmpty(t, latest.Amount)
-		assert.NotEmpty(t, latest.Note)
-		assert.NotEmpty(t, latest.Tags)
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusCreated, res.StatusCode)
+			assert.NotEqual(t, 0, e.ID)
+			assert.Equal(t, "strawberry smoothie", e.Title)
+			assert.Equal(t, float64(79.00), e.Amount)
+			assert.Equal(t, "night market promotion discount 10 bath", e.Note)
+			assert.Equal(t, []string{"food", "beverage"}, e.Tags)
+		}
 	})
 }
 
-func seedUser(t *testing.T) Expenses {
-	var e Expenses
-	body := bytes.NewBufferString(`{
-		"name": "Phubohdee",
-		"age": 22
-	}`)
+func TestUpdateExpensesByID(t *testing.T) {
+	t.Run("Should update expense by id successfully", func(t *testing.T) {
+		body := bytes.NewBufferString(`{
+			"title": "apple smoothie",
+			"amount": 89,
+			"note": "no discount",
+			"tags": ["beverage"]
+		}`)
 
-	err := request(http.MethodPost, uri("expenses"), body).Decode(&e)
-	if err != nil {
-		t.Fatal("can't create uomer", err)
-	}
+		var e Expenses
+		res := request(http.MethodGet, uri("expenses", "1"), body)
+		err := res.Decode(&e)
 
-	return e
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusCreated, res.StatusCode)
+			assert.Equal(t, 1, e.ID)
+			assert.Equal(t, "apple smoothie", e.Title)
+			assert.Equal(t, float64(89.00), e.Amount)
+			assert.Equal(t, "no discount", e.Note)
+			assert.Equal(t, []string{"beverage"}, e.Tags)
+		}
+	})
 }
-
 func uri(paths ...string) string {
 	host := "http://localhost:2565"
 	if paths == nil {
